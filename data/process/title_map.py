@@ -20,7 +20,7 @@ def update_titles_with_new_ids(item_mapping_path, titles_path, updated_titles_pa
 
 if __name__ == "__main__":
     item_mapping_path = "item_mapping.csv"
-    titles_path = "/Users/yyykobe/PycharmProjects/MM_Rec/data/MicroLens-50k/MicroLens-50k_titles.csv"
-    updated_titles_path = "/Users/yyykobe/PycharmProjects/MM_Rec/data/MicroLens-50k/MicroLens-50k_titles_processed.csv"
+    titles_path = "../MicroLens-50k/MicroLens-50k_titles.csv"
+    updated_titles_path = "../MicroLens-50k/MicroLens-50k_titles_processed.csv"
 
     update_titles_with_new_ids(item_mapping_path, titles_path, updated_titles_path)

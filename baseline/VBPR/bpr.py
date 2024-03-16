@@ -53,7 +53,7 @@ class BPR(nn.Module):
         score = (user_emb * item_emb).sum(dim=1) + item_bias
         return score
 
-def train(model, data_loader, optimizer, epochs=1):
+def train(model, data_loader, optimizer, epochs=10):
     model.train()
     criterion = nn.LogSigmoid()
     for epoch in range(epochs):

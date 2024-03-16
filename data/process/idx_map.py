@@ -24,8 +24,8 @@ def remap_ids_and_save_mappings(data_path, output_path, user_mapping_path, item_
 
 
 if __name__ == "__main__":
-    data_path = "/Users/yyykobe/PycharmProjects/MM_Rec/data/MicroLens-50k/MicroLens-50k_pairs.csv"
-    output_path = "/Users/yyykobe/PycharmProjects/MM_Rec/data/MicroLens-50k/MicroLens-50k_pairs_processed.csv"
+    data_path = "../MicroLens-50k/MicroLens-50k_pairs.csv"
+    output_path = "../MicroLens-50k/MicroLens-50k_pairs_processed.csv"
     user_mapping_path = "user_mapping.csv"
     item_mapping_path = "item_mapping.csv"
 
