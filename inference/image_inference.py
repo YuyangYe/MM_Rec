@@ -1,47 +1,39 @@
-import base64
-import requests
+import openai
+import os
 
-# OpenAI API Key
-api_key = "sk-XLMKybMCQNuy4bJuB3Dc64C1AbA545F2893d91Bd23421dF2"
 
-# Function to encode the image
-def encode_image(image_path):
-  with open(image_path, "rb") as image_file:
-    return base64.b64encode(image_file.read()).decode('utf-8')
+os.environ['OPENAI_API_KEY'] = "sk-XLMKybMCQNuy4bJuB3Dc64C1AbA545F2893d91Bd23421dF2"
+# os.environ['OPENAI_API_KEY'] = "sk-lEO0bBfYiaLypS7c85F5005731E84c18AaAf0e50A504901d" ## 这个令牌可以备用，我这边也显示正常
 
-# Path to your image
-image_path = "../data/MicroLens-50k/MicroLens-50k_covers/1.jpg"
+os.environ['OPENAI_API_BASE'] = "https://api.ai-yyds.com/v1"
 
-# Getting the base64 string
-base64_image = encode_image(image_path)
+openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_base = os.environ['OPENAI_API_BASE']
+openai.Model.list()
 
-headers = {
-  "Content-Type": "application/json",
-  "Authorization": f"Bearer {api_key}"
-}
 
-payload = {
-  "model": "gpt-4-vision-preview",
-  "messages": [
-    {
-      "role": "user",
-      "content": [
+def query_chat_model(prompt):
+    response = openai.ChatCompletion.create(
+      model="gpt-4-vision-preview",
+      messages=[
         {
-          "type": "text",
-          "text": "What’s in this image?"
-        },
-        {
-          "type": "image_url",
-          "image_url": {
-            "url": f"data:image/jpeg;base64,{base64_image}"
-          }
+          "role": "user",
+          "content": [
+            {"type": "text", "text": prompt},
+            {
+              "type": "image_url",
+              "image_url": {
+                "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/1.jpg",
+              },
+            },
+          ],
         }
-      ]
-    }
-  ],
-  "max_tokens": 300
-}
+      ],
+      max_tokens=300,
+    )
+    reply = response['choices'][0]['message']['content']
+    return reply,response
 
-response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
 
-print(response.json())
+reply,response=query_chat_model("This is the cover of a video. What's in this image?")
+print(reply)

@@ -18,6 +18,7 @@ updated_lines = []
 max_item_lens = 0
 total_items = 0
 user_nums = 0.0
+large_item_len = []
 with open(dataset_path, 'r') as f:
     for line in f:
         user, items = line.strip().split('\t')
@@ -25,11 +26,14 @@ with open(dataset_path, 'r') as f:
             max_item_lens = len(items.split())
         total_items += len(items.split())
         user_nums += 1.0
+        if len(items.split()) > 20:
+            large_item_len.append(len(items.split()))
         updated_items = [str(item_mapping[int(item)]) for item in items.split() if int(item) in item_mapping]
         updated_lines.append((user, updated_items))
 
 print(f"Max item length: {max_item_lens}")
 print(f"Avg item length: {total_items / user_nums}")
+print(f"Large item length: {len(large_item_len)}")
 
 # 计算所有可能的新item ID集合
 all_new_ids = set(item_mapping.values())

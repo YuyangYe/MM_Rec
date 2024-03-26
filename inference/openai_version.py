@@ -23,9 +23,117 @@ def query_chat_model(prompt):
             {
               "type": "image_url",
               "image_url": {
-                "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/1.jpg",
+                "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/3960.jpg",
               },
             },
+              {
+                  "type": "image_url",
+                  "image_url": {
+                      "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/4022.jpg",
+                  },
+              },
+              {
+                  "type": "image_url",
+                  "image_url": {
+                      "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/6932.jpg",
+                  },
+              },
+              {
+                  "type": "image_url",
+                  "image_url": {
+                      "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/2914.jpg",
+                  },
+              },
+              {
+                  "type": "image_url",
+                  "image_url": {
+                      "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/7500.jpg",
+                  },
+              },
+              {
+                  "type": "image_url",
+                  "image_url": {
+                      "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/1.jpg",
+                  },
+              },
+              {
+                  "type": "image_url",
+                  "image_url": {
+                      "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/2.jpg",
+                  },
+              },
+              {
+                  "type": "image_url",
+                  "image_url": {
+                      "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/3.jpg",
+                  },
+              },
+              {
+                  "type": "image_url",
+                  "image_url": {
+                      "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/4.jpg",
+                  },
+              },
+              {
+                  "type": "image_url",
+                  "image_url": {
+                      "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/5.jpg",
+                  },
+              },
+              {
+                  "type": "image_url",
+                  "image_url": {
+                      "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/6.jpg",
+                  },
+              },
+              {
+                  "type": "image_url",
+                  "image_url": {
+                      "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/7.jpg",
+                  },
+              },
+              {
+                  "type": "image_url",
+                  "image_url": {
+                      "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/500.jpg",
+                  },
+              },
+              {
+                  "type": "image_url",
+                  "image_url": {
+                      "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/750.jpg",
+                  },
+              },
+              {
+                  "type": "image_url",
+                  "image_url": {
+                      "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/10.jpg",
+                  },
+              },
+              {
+                  "type": "image_url",
+                  "image_url": {
+                      "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/11.jpg",
+                  },
+              },              {
+                  "type": "image_url",
+                  "image_url": {
+                      "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/11.jpg",
+                  },
+              },
+             {
+                  "type": "image_url",
+                  "image_url": {
+                      "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/12.jpg",
+                  },
+              },
+              {
+                  "type": "image_url",
+                  "image_url": {
+                      "url": "https://recsys.westlake.edu.cn/MicroLens-50k-Dataset/MicroLens-50k_covers/13.jpg",
+                  },
+              },
+
           ],
         }
       ],
@@ -35,5 +143,5 @@ def query_chat_model(prompt):
     return reply,response
 
 
-reply,response=query_chat_model("What’s in this image?")
+reply,response=query_chat_model("These are some video images which were interacted with a user in chronological. Can you summary the user's preference based on this image sequence?")
 print(reply)
