@@ -1,3 +1,25 @@
+"""process amazon data
+
+Need to download the review and meta for a category, unzip, and put jsonl data
+into the `input` folder.
+
+Example input and output:
+.
+├── input
+│   ├── Magazine_Subscriptions.jsonl
+│   └── meta_Magazine_Subscriptions.jsonl
+├── process_data.py
+└── processed
+    ├── Magazine_Subscriptions_i_map.tsv
+    ├── Magazine_Subscriptions_item_desc.tsv
+    ├── Magazine_Subscriptions_u_i_pairs.tsv
+    ├── Magazine_Subscriptions_u_map.tsv
+    ├── Magazine_Subscriptions_user_items_negs.tsv
+    ├── Magazine_Subscriptions_user_items_negs_test.csv
+    ├── Magazine_Subscriptions_user_items_negs_train.csv
+    └── Magazine_Subscriptions_user_items_negs_val.csv
+"""
+
 import os, csv
 import pandas as pd
 import json
