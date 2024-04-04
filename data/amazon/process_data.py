@@ -2,6 +2,7 @@
 
 Need to download the review and meta for a category, unzip, and put jsonl data
 into the `input` folder.
+https://amazon-reviews-2023.github.io/#grouped-by-category
 
 Example input and output:
 .
