@@ -24,53 +24,66 @@ Example input and output:
 import os, csv
 import pandas as pd
 import json
+import gzip
 from collections import Counter
 import numpy as np
 from sklearn.model_selection import train_test_split
 
 MAGAZINE_DATASET = 'Magazine_Subscriptions'
 BEAUTY_DATASET = 'All_Beauty'
-IN_PATH = './input'
 OUT_PATH = './processed'
-KEY_COLUMNS = ['user_id', 'item_id', 'timestamp']
 UID, IID = 'user_id', 'item_id'
 UMAP_FILE, IMAP_FILE,  = '{dataset}_u_map.tsv', '{dataset}_i_map.tsv'
 U_I_PAIR_FILE = '{dataset}_u_i_pairs.tsv'
 POS_NEG_FILE = '{dataset}_user_items_negs.tsv'
 ITEM_DESC_FILE = '{dataset}_item_desc.tsv'
+GZ_MODE = True
+
+if GZ_MODE:
+    IN_PATH = './gz'
+    IN_SUFFIX = '.jsonl.gz'
+else:
+    IN_PATH = './input'
+    IN_SUFFIX = '.jsonl'
+
 
 RND_SEED = 2024040331
 
+REVIEWS_JSONL_COLS = ['user_id', 'parent_asin', 'timestamp']
+META_JSONL_COLS = ['parent_asin', 'image', 'title', 'summary']
+
 def get_input_file(dataset, meta=False):
-    fname = f'{dataset}.jsonl'
+    fname = dataset + IN_SUFFIX
     if meta:
         fname = 'meta_' + fname
     return os.path.join(IN_PATH, fname)
 
-def fill_large_image(payload):
-    payload['large'] = ''
-    for image in payload['images']:
-        if 'large' in image:
-            payload['large'] = image['large']
-            break
-    if 'description' in payload:
-        payload['summary'] = '\n'.join(payload['description'])
-    return payload
+def preprocess_review(review):
+    return {k:review[k] for k in REVIEWS_JSONL_COLS}
 
-def read_jsonl_as_pd(fname):
-    with open(fname, encoding="utf8") as f:
-        lines = [fill_large_image(json.loads(x)) for x in f.read().splitlines()]
-    df = pd.DataFrame(lines)
-    return df
 
-def prep_for_kcore(df):
+def stream_lines(fname):
+    if fname.endswith('.gz'):
+        open_ = gzip.open
+    else:
+        open_ = open
+    with open_(fname, mode='rt', encoding="utf8") as f:
+        line = f.readline()
+        while line:
+            yield line
+            line = f.readline()
+
+
+def read_reviews_as_pd(fname):
+    collected = []
+    for line in stream_lines(fname):
+        collected.append(preprocess_review(json.loads(line)))
+    df = pd.DataFrame(collected)
     print(f'Before dropped: {df.shape}')
-    # df = df.drop(columns=['title', 'text', 'images', 'asin', 'helpful_vote', 'verified_purchase', 'rating'])
-    df = df.rename(columns={'parent_asin':'item_id'})
-    df = df[['item_id','user_id','timestamp']]
-    df.dropna(subset=KEY_COLUMNS, inplace=True)
-    df.drop_duplicates(subset=KEY_COLUMNS, inplace=True)
+    df.dropna(subset=REVIEWS_JSONL_COLS, inplace=True)
+    df.drop_duplicates(subset=REVIEWS_JSONL_COLS, inplace=True)
     print(f'After dropped: {df.shape}')
+    df.rename(columns={'parent_asin':'item_id'}, inplace=True)
     return df
 
 
@@ -80,10 +93,10 @@ def find_invalid_freq_ids(df, field, max_num=np.inf, min_num=-1):
     return blocklist
 
 
-def filter_by_k_core(df, min_u_num, min_i_num):
+def filter_by_k_core(df, core_req):
+    min_u_num, min_i_num = core_req
     iteration = 0
-    df = df.copy()
-    print('Calculating k-core...')
+    print(f'Calculating k-core {core_req}...')
     while True:
         ban_users = find_invalid_freq_ids(df, field=UID, min_num=min_u_num)
         ban_items = find_invalid_freq_ids(df, field=IID, min_num=min_i_num)
@@ -94,17 +107,10 @@ def filter_by_k_core(df, min_u_num, min_i_num):
         dropped_inter = pd.Series(False, index=df.index)
         dropped_inter |= df[UID].isin(ban_users)
         dropped_inter |= df[IID].isin(ban_items)
-        print(f'\titeration {iteration}: {len(dropped_inter)} dropped interactions',
+        print(f'\titeration {iteration}: {dropped_inter.sum()} dropped interactions',
              f"with {len(ban_users)} users banned and {len(ban_items)} items banned")
         df.drop(df.index[dropped_inter], inplace=True)
         iteration += 1
-    return df
-
-def get_input_file(dataset, meta=False):
-    fname = f'{dataset}.jsonl'
-    if meta:
-        fname = 'meta_' + fname
-    return os.path.join(IN_PATH, fname)
 
 def reindex(df):
     df.reset_index(drop=True, inplace=True)
@@ -142,7 +148,7 @@ def neg_samples(df, neg=5, neg_multiplier=3):
     items_per_user.drop(columns=['samples', 'items'], inplace=True)
     return items_per_user
 
-def pos_samples(df, pos=6):
+def pos_samples(df, pos):
     # TODO(pezhu): decide the policy to select need to sort positive items by timestamp...
     item_frequency = df.groupby(IID).size().reset_index(name='frequency')
     freq = df.merge(item_frequency, on=IID).sort_values(by=[UID, 'frequency', 'timestamp'], ascending=False)
@@ -152,28 +158,26 @@ def pos_samples(df, pos=6):
     return pos_df.groupby(UID)[IID].agg(lambda x:','.join(str(i) for i in x)).reset_index().rename(columns={IID: 'pos'})
 
 
-def user_items_negs(df, pos=6, neg=5):
-    pos = pos_samples(df)
-    neg = neg_samples(df)
-    return pos.merge(neg, on=UID)
+def user_items_negs(df, pos, neg):
+    pos_df = pos_samples(df, pos)
+    neg_df = neg_samples(df, neg)
+    return pos_df.merge(neg_df, on=UID)
 
 
 def split_tsv_by_user_id(tsv_file, df=None):
     if df is not None:
         df = pd.read_csv(tsv_file, delimiter='\t')
     users = df[UID].unique()
-    train_users, test_val_users = train_test_split(users, test_size=0.2, random_state=RND_SEED)
-    val_users, test_users = train_test_split(test_val_users, test_size=0.5, random_state=RND_SEED)
+    train_users, test_users = train_test_split(users, test_size=0.2, random_state=RND_SEED)
     
     train_data = df[df[UID].isin(train_users)]
-    val_data = df[df[UID].isin(val_users)]
     test_data = df[df[UID].isin(test_users)]
-    for kind, data in {'train':train_data,'val':val_data,'test':test_data}.items():
+    for kind, data in {'train':train_data,'test':test_data}.items():
         file_path = tsv_file[:-4] + f'_{kind}.csv'
-        df.to_csv(file_path, sep='\t', header=False, index=False)
+        data.to_csv(file_path, sep='\t', header=False, index=False)
         print(f"\t{kind} File saved to {file_path}")
 
-def save_to_csv(dataset, df, df_meta, u_map, i_map):
+def save_reviews_to_csv(dataset, df, u_map, i_map):
     # save interactions
     u_i_pair_path = os.path.join(OUT_PATH, U_I_PAIR_FILE.format(dataset=dataset))
     df.to_csv(u_i_pair_path, sep='\t', index=False)
@@ -193,32 +197,59 @@ def save_to_csv(dataset, df, df_meta, u_map, i_map):
     
     # save user item negs
     pos_neg_path = os.path.join(OUT_PATH, POS_NEG_FILE.format(dataset=dataset))
-    df2 = user_items_negs(df, pos=6, neg=5)
+    df2 = user_items_negs(df, pos=11, neg=5)
     df2.to_csv(pos_neg_path, sep='\t', index=False)
     print(f"saved file {pos_neg_path}")
     
     split_tsv_by_user_id(pos_neg_path, df2)
 
-    # item desc
+def process_reviews(dataset, core_req):
+    df = read_reviews_as_pd(get_input_file(dataset))
+    filter_by_k_core(df, core_req)
+    df, u_map, i_map = reindex(df)
+
+    save_reviews_to_csv(dataset, df, u_map, i_map)
+    return df, u_map, i_map
+
+
+def preprocess_meta(payload, i_map):
+    parent_asin = payload['parent_asin']
+    if parent_asin not in i_map:
+        return
+    meta = {}
+    meta['item_id'] = i_map[parent_asin]
+    for image in payload['images']:
+        if 'large' in image:
+            meta['image'] = image['large']
+            break
+    if 'description' in payload:
+        meta['summary'] = payload['title'] + '. ' + '; '.join(payload['description'])
+    return meta
+
+def process_meta(i_map=None, dataset=MAGAZINE_DATASET):
+    if i_map is None:
+        i_path = os.path.join(OUT_PATH, IMAP_FILE.format(dataset=dataset))
+        i_map = pd.read_csv(i_path, sep='\t', header=0)
     item_desc_path = os.path.join(OUT_PATH, ITEM_DESC_FILE.format(dataset=dataset))
-    df_meta.to_csv(item_desc_path, sep='\t', index=False)
+    i_file = get_input_file(dataset, meta=True)
+    headers = ['item_id', 'image', 'summary']
+
+    with open(item_desc_path, 'w') as f2:
+        f2.write('\t'.join(headers))
+        f2.write('\n')
+        for line in stream_lines(i_file):
+            meta = preprocess_meta(json.loads(line), i_map)
+            if meta:
+                f2.write('\t'.join(str(meta.get(h, '')) for h in headers))
+                f2.write('\n')
     print(f"saved file {item_desc_path}")
 
-def process_dataset(dataset=MAGAZINE_DATASET, core_req=(6,6)):
-    df = read_jsonl_as_pd(get_input_file(dataset))
-    df = prep_for_kcore(df)
-    df = filter_by_k_core(df, *core_req)
-    df, u_map, i_map = reindex(df)
-    
-    # metadata
-    df_meta = read_jsonl_as_pd(get_input_file(dataset, meta=True))
-    df_meta = df_meta[df_meta['parent_asin'].isin(i_map.keys())]
-    df_meta['item_id'] = df_meta['parent_asin'].map(i_map)
-    df_meta = df_meta[['item_id','large','title', 'summary']]
 
-    # save
-    save_to_csv(dataset, df, df_meta, u_map, i_map)
-    return df, df_meta
+def process_dataset(dataset, core_req):
+    i_map = process_reviews(dataset, core_req)[-1]
+    process_meta(i_map, dataset)
 
-process_dataset(MAGAZINE_DATASET, (3,3))
-process_dataset(BEAUTY_DATASET, (3,3))
+# process_dataset(MAGAZINE_DATASET, (3,3))
+# process_dataset('Baby_Products', (6,5))
+process_dataset('Video_Games', (6,5))
+# process_dataset('Sports_and_Outdoors', (6,5))
