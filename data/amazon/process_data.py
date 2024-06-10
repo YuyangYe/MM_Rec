@@ -152,6 +152,7 @@ def pos_samples(df, pos):
     # TODO(pezhu): decide the policy to select need to sort positive items by timestamp...
     item_frequency = df.groupby(IID).size().reset_index(name='frequency')
     freq = df.merge(item_frequency, on=IID).sort_values(by=[UID, 'frequency', 'timestamp'], ascending=False)
+    freq = freq.drop_duplicates(subset=[UID, IID], keep='first')
     # For each user, rank items by frequency, and pick the top `pos` items.
     # Break tie by original order.
     pos_df = freq[freq.groupby(UID)['frequency'].rank(method="first", ascending=False) <= pos]
@@ -224,6 +225,7 @@ def preprocess_meta(payload, i_map):
             break
     if 'description' in payload:
         meta['summary'] = payload['title'] + '. ' + '; '.join(payload['description'])
+    meta['summary'] = meta['summary'].replace('\t', ' ')
     return meta
 
 def process_meta(i_map=None, dataset=MAGAZINE_DATASET):
@@ -250,6 +252,6 @@ def process_dataset(dataset, core_req):
     process_meta(i_map, dataset)
 
 # process_dataset(MAGAZINE_DATASET, (3,3))
-# process_dataset('Baby_Products', (6,5))
+process_dataset('Baby_Products', (6,5))
 process_dataset('Video_Games', (6,5))
-# process_dataset('Sports_and_Outdoors', (6,5))
+process_dataset('Sports_and_Outdoors', (6,5))
